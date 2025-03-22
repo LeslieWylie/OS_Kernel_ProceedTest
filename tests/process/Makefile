@@ -1,6 +1,6 @@
 # 编译器和标志
 CC = gcc
-CFLAGS = -m32 -Wall -Wextra -I../../include/kernel
+CFLAGS = -Wall -Wextra -I../../include/kernel
 
 # 源文件
 COMMON_SRCS = ../../kernel/process/process.c \
