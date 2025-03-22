@@ -1,0 +1,120 @@
+# 操作系统内核进程模块开发日志
+
+## 项目结构
+
+```
+kernel/
+└── process/
+    ├── process.c          # 进程管理的主要实现
+    ├── process_test.c     # 进程管理的测试代码
+    ├── scheduler.c        # 进程调度器实现
+    ├── context.c         # 进程上下文切换相关
+    └── memory.c          # 进程内存管理相关
+
+include/
+└── kernel/
+    ├── process.h         # 进程管理的主要头文件
+    ├── scheduler.h       # 调度器相关定义
+    ├── context.h        # 上下文切换相关定义
+    └── memory.h         # 内存管理相关定义
+
+tests/
+└── process/
+    ├── test_process.c    # 独立的进程测试程序
+    ├── test_fifo.c      # FIFO调度器测试程序
+    └── Makefile         # 测试专用的构建文件
+```
+
+## 开发日志
+
+### 2024-03-22: 初始化项目结构和基本功能实现
+
+#### 1. PCB 结构设计
+
+在`include/kernel/process.h`中定义了 PCB 结构，包含：
+
+- 进程 ID
+- 进程状态
+- 优先级
+- 栈信息
+- 上下文信息
+- 内存管理结构
+- 进程关系（父进程、下一个进程）
+- 时间信息
+- 其他控制信息
+
+#### 2. 进程状态管理
+
+实现了 5 种基本状态：
+
+- PROCESS_CREATED（新创建）
+- PROCESS_READY（就绪）
+- PROCESS_RUNNING（运行中）
+- PROCESS_BLOCKED（阻塞）
+- PROCESS_TERMINATED（终止）
+
+#### 3. FIFO 调度器实现
+
+在`kernel/process/scheduler.c`中实现了 FIFO 调度器：
+
+1. 数据结构：
+
+```c
+static struct {
+    process_t *head;  // 队列头
+    process_t *tail;  // 队列尾
+} ready_queue = {NULL, NULL};
+```
+
+2. 主要功能：
+
+- `scheduler_init()`: 初始化空队列
+- `scheduler_add()`: 将进程添加到队列尾部
+- `scheduler_remove()`: 从队列中移除指定进程
+- `scheduler_next()`: 获取队列头部进程
+- `schedule()`: 执行进程调度
+- `scheduler_block()`: 阻塞当前进程
+- `scheduler_wake()`: 唤醒被阻塞的进程
+
+3. FIFO 特性：
+
+- 严格按照进程创建顺序执行
+- 不考虑进程优先级
+- 进程一旦开始执行，将继续执行直到完成或被阻塞
+- 新进程总是添加到队列尾部
+
+#### 4. 测试实现
+
+创建了两个测试程序：
+
+1. `test_process.c`: 测试基本的进程管理功能
+2. `test_fifo.c`: 专门测试 FIFO 调度器功能
+   - 测试进程按序创建和执行
+   - 测试进程阻塞和唤醒
+   - 验证 FIFO 执行顺序
+
+#### 5. 构建系统
+
+更新了 Makefile 以支持多个测试程序：
+
+- 支持编译多个测试程序
+- 提供单独的测试目标
+- 简化了构建过程
+
+#### 待办事项
+
+- [ ] 完善内存管理
+- [ ] 实现进程间通信
+- [ ] 添加更多调度策略
+- [ ] 实现进程同步机制
+- [ ] 添加进程优先级支持
+- [ ] 实现时间片轮转
+- [ ] 添加进程资源统计
+- [ ] 实现进程等待队列
+
+#### 下一步计划
+
+1. 实现进程等待功能
+2. 添加进程优先级支持
+3. 实现时间片轮转调度
+4. 完善测试用例
