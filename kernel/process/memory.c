@@ -1,4 +1,5 @@
 #include "memory.h"
+#include <stddef.h>
 #include <string.h>
 
 // 简单的内存分配器实现（仅用于测试）
