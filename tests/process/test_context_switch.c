@@ -2,6 +2,17 @@
 #include "context.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
+// 模拟printk函数
+void printk(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+}
 
 // 测试进程1和2的任务函数
 void test_task1(void *arg)

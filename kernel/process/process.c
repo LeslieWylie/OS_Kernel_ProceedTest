@@ -2,8 +2,9 @@
 #include "memory.h"
 #include "scheduler.h"
 #include "context.h"
-#include "printk.h"
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 // 全局变量
 static pid_t next_pid = 1;
@@ -25,7 +26,7 @@ void process_init(void)
     process_t *idle = kmalloc(sizeof(process_t));
     if (!idle)
     {
-        printk("Failed to create idle process\n");
+        printf("Failed to create idle process\n");
         return;
     }
 
@@ -320,4 +321,3 @@ void switch_to(process_t *next)
     // 切换上下文
     context_switch(prev->context, next->context);
 }
-EOF;

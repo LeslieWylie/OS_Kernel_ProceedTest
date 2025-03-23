@@ -1,7 +1,7 @@
 #include "scheduler.h"
 #include "process.h"
 #include "context.h"
-#include "printk.h"
+#include <stdio.h>
 
 // FIFO就绪队列
 static struct
