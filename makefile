@@ -1,83 +1,72 @@
-# 指定编译器和工具
-AS = nasm
+# OS内核主Makefile
+
+# 编译器和标志
 CC = gcc
-LD = ld
-GRUB = grub-mkrescue
-QEMU = qemu-system-x86_64
+AS = gcc
+CFLAGS = -Wall -Wextra -I./include/kernel
+ASFLAGS = -c
 
-# 目录结构
-BUILD_DIR = build
-KERNEL_DIR = kernel
-DRIVERS_DIR = drivers
-ARCH_DIR = arch/x86
-ISO_DIR = iso
+# 目标文件夹
+BIN_DIR = bin
 
-# 生成的文件
-BOOT_OBJ = $(BUILD_DIR)/boot.o
-KERNEL_OBJS = $(BUILD_DIR)/kernel.o $(BUILD_DIR)/printk.o $(BUILD_DIR)/keyboard.o \
-              $(BUILD_DIR)/interrupt.o $(BUILD_DIR)/shell.o $(BUILD_DIR)/string.o $(BUILD_DIR)/idt.o \
-			#   $(BUILD_DIR)/
+# 源代码目录
+SRC_DIR = kernel
+PROC_DIR = $(SRC_DIR)/process
 
-KERNEL_BIN = $(BUILD_DIR)/kernel.bin
-ISO_FILE = PhyOS.iso
+# 源文件
+PROC_SRCS = $(PROC_DIR)/process.c \
+            $(PROC_DIR)/scheduler.c \
+            $(PROC_DIR)/context.c \
+            $(PROC_DIR)/memory.c
 
-# 编译选项
-ASFLAGS = -f elf32
-CFLAGS = -m32 -ffreestanding -c -Iinclude
-LDFLAGS = -m elf_i386 -T linker.ld
+# 汇编源文件
+ASM_SRCS = $(PROC_DIR)/switch.S
+
+# 生成的目标文件
+ASM_OBJS = $(ASM_SRCS:.S=.o)
+C_OBJS = $(PROC_SRCS:.c=.o)
+ALL_OBJS = $(C_OBJS) $(ASM_OBJS)
+
+# 测试程序
+TEST_PROGRAMS = test_process test_fifo test_context_switch
+TEST_TARGETS = $(addprefix $(BIN_DIR)/, $(TEST_PROGRAMS))
 
 # 默认目标
-all: $(ISO_FILE)
+all: prepare $(TEST_TARGETS)
 
-# 确保 build 目录存在
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+# 准备输出目录
+prepare:
+	@mkdir -p $(BIN_DIR)
 
-# 编译 boot.S
-$(BOOT_OBJ): boot/boot.S | $(BUILD_DIR)
+# 编译.S汇编文件
+%.o: %.S
 	$(AS) $(ASFLAGS) $< -o $@
 
-# 编译arch/x86的文件
-$(BUILD_DIR)/idt.o: $(ARCH_DIR)/idt.S | $(BUILD_DIR)
-	$(AS) $(ASFLAGS) $< -o $@
+# 编译.c源文件
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# 编译 kernel/ 里的 C 文件
-$(BUILD_DIR)/kernel.o: $(KERNEL_DIR)/kernel.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+# 编译测试程序
+$(BIN_DIR)/test_process: tests/process/test_process.c $(ALL_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-$(BUILD_DIR)/printk.o: $(KERNEL_DIR)/printk.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+$(BIN_DIR)/test_fifo: tests/process/test_fifo.c $(ALL_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-$(BUILD_DIR)/shell.o: $(KERNEL_DIR)/shell.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+$(BIN_DIR)/test_context_switch: tests/process/test_context_switch.c $(ALL_OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-$(BUILD_DIR)/interrupt.o: $(KERNEL_DIR)/interrupt.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
+# 运行所有测试
+test: all
+	@echo "\n=== 运行进程管理测试 ==="
+	$(BIN_DIR)/test_process
+	@echo "\n=== 运行FIFO调度器测试 ==="
+	$(BIN_DIR)/test_fifo
+	@echo "\n=== 运行上下文切换测试 ==="
+	$(BIN_DIR)/test_context_switch
 
-$(BUILD_DIR)/string.o: kernel/string.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
-
-# 编译 drivers/ 里的 C 文件
-$(BUILD_DIR)/keyboard.o: $(DRIVERS_DIR)/keyboard.c | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $< -o $@
-
-# 链接所有目标文件
-$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^
-
-# 复制内核到 ISO 目录
-copy: $(KERNEL_BIN)
-	mkdir -p $(ISO_DIR)/boot/
-	cp $(KERNEL_BIN) $(ISO_DIR)/boot/
-
-# 生成 ISO
-$(ISO_FILE): copy
-	$(GRUB) -o $@ $(ISO_DIR)
-
-# 运行 QEMU
-run: $(ISO_FILE)
-	$(QEMU) -cdrom $<
-
-# 清理编译生成的文件
+# 清理
 clean:
-	rm -rf $(BUILD_DIR) $(ISO_FILE)
+	rm -f $(TEST_TARGETS) $(ALL_OBJS)
+
+.PHONY: all prepare test clean

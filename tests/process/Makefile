@@ -1,7 +1,7 @@
 # 编译器和标志
 CC = gcc
 AS = gcc # 使用gcc来处理汇编文件
-CFLAGS = -Wall -Wextra -I../../include/kernel
+CFLAGS = -Wall -Werror -I../../include -I../../include/kernel
 ASFLAGS = -c
 
 # 源文件

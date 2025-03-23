@@ -1,9 +1,9 @@
 #include "process.h"
 #include "scheduler.h"
-#include "printk.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 // 模拟printk函数
 void printk(const char *fmt, ...)
