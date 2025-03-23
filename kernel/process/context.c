@@ -76,7 +76,7 @@ void context_restore(context_t *context)
         "movw %0, %%fs\n\t"
         "movw %0, %%gs\n\t"
         :
-        : "r"((uint16_t)context->ds)
+        : "rm"((uint16_t)context->ds)
         : "memory");
 
     // 先保存栈指针到临时变量
@@ -142,12 +142,12 @@ void context_switch(context_t *from, context_t *to)
     context_restore(to);
 }
 
+// 汇编实现的上下文切换函数 - 声明为外部函数
+// 实际实现在switch.S文件中
+extern void __switch_to(struct process *prev, struct process *next);
+
 // 进程上下文切换 - 使用进程结构体的包装函数
 void process_context_switch(struct process *prev, struct process *next)
 {
     __switch_to(prev, next);
 }
-
-// 汇编实现的上下文切换函数 - 声明为外部函数
-// 实际实现在switch.S文件中
-extern void __switch_to(struct process *prev, struct process *next);
