@@ -82,6 +82,9 @@ void context_restore(context_t *context)
     // 先保存栈指针到临时变量
     uint64_t stack_ptr = context->rsp;
 
+    // 将context的地址存入临时变量，避免在通用寄存器恢复时同时用于地址计算
+    void *ctx_ptr = context;
+
     // 恢复除rbp和rsp外的所有通用寄存器
     __asm__ __volatile__(
         "movq 0(%0), %%rax\n\t"
@@ -99,17 +102,15 @@ void context_restore(context_t *context)
         "movq 112(%0), %%r14\n\t"
         "movq 120(%0), %%r15\n\t"
         :
-        : "r"(context)
-        : "memory", "rax", "rbx", "rcx", "rdx",
-          "rsi", "rdi", "r8", "r9", "r10", "r11",
-          "r12", "r13", "r14", "r15");
+        : "r"(ctx_ptr)
+        : "memory");
 
     // 恢复rbp（使用临时寄存器避免直接修改rbp）
     __asm__ __volatile__(
         "movq 48(%0), %%rax\n\t"
         "movq %%rax, %%rbp\n\t"
         :
-        : "r"(context)
+        : "r"(ctx_ptr)
         : "memory", "rax");
 
     // 恢复rsp
