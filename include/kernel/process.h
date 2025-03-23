@@ -105,7 +105,8 @@ const char *process_state_to_string(process_state_t state);
 int process_is_alive(process_t *proc);
 
 // 调度相关
-void schedule(void);
+void schedule(void);     // 由scheduler.c实现的FIFO调度
+void schedule_sjf(void); // 由process.c实现的SJF调度
 void do_timer(void);
 void switch_to(process_t *next);
 

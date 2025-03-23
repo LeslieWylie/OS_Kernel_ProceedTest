@@ -4,6 +4,7 @@
 #include "memory.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 // 模拟printk函数
 void printk(const char *fmt, ...)
