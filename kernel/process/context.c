@@ -1,4 +1,5 @@
 #include "context.h"
+#include "process.h"
 #include <string.h>
 
 // 初始化上下文
@@ -7,17 +8,17 @@ void context_init(context_t *context, void (*entry)(void *), void *arg, void *st
     memset(context, 0, sizeof(context_t));
     context->rip = (uint64_t)entry;
     context->rsp = (uint64_t)stack_top;
-    context->rdi = (uint64_t)arg;
-    context->cs = 0x08;
-    context->ds = 0x10;
+    context->rdi = (uint64_t)arg; // x86_64调用约定：第一个参数存放在rdi
+    context->cs = 0x08;           // 内核代码段
+    context->ds = 0x10;           // 内核数据段
     context->es = 0x10;
     context->fs = 0x10;
     context->gs = 0x10;
     context->ss = 0x10;
-    context->rflags = 0x202;
+    context->rflags = 0x202; // IF=1，开中断
 }
 
-// 保存当前上下文
+// 保存当前CPU上下文（汇编代码外部实现的包装）
 void context_save(context_t *context)
 {
     __asm__ __volatile__(
@@ -65,10 +66,10 @@ void context_save(context_t *context)
         : "memory");
 }
 
-// 恢复上下文
+// 恢复CPU上下文（汇编代码外部实现的包装）
 void context_restore(context_t *context)
 {
-    // 恢复段寄存器
+    // 恢复段寄存器（不能直接设置CS和SS）
     __asm__ __volatile__(
         "movw %0, %%ds\n\t"
         "movw %0, %%es\n\t"
@@ -78,7 +79,10 @@ void context_restore(context_t *context)
         : "r"((uint16_t)context->ds)
         : "memory");
 
-    // 恢复通用寄存器
+    // 先保存栈指针到临时变量
+    uint64_t stack_ptr = context->rsp;
+
+    // 恢复除rbp和rsp外的所有通用寄存器
     __asm__ __volatile__(
         "movq 0(%0), %%rax\n\t"
         "movq 8(%0), %%rbx\n\t"
@@ -86,8 +90,6 @@ void context_restore(context_t *context)
         "movq 24(%0), %%rdx\n\t"
         "movq 32(%0), %%rsi\n\t"
         "movq 40(%0), %%rdi\n\t"
-        "movq 48(%0), %%rbp\n\t"
-        "movq 56(%0), %%rsp\n\t"
         "movq 64(%0), %%r8\n\t"
         "movq 72(%0), %%r9\n\t"
         "movq 80(%0), %%r10\n\t"
@@ -99,33 +101,53 @@ void context_restore(context_t *context)
         :
         : "r"(context)
         : "memory", "rax", "rbx", "rcx", "rdx",
-          "rsi", "rdi", "rbp", "rsp",
-          "r8", "r9", "r10", "r11",
+          "rsi", "rdi", "r8", "r9", "r10", "r11",
           "r12", "r13", "r14", "r15");
 
-    // 恢复标志寄存器并跳转到rip
+    // 恢复rbp（使用临时寄存器避免直接修改rbp）
     __asm__ __volatile__(
-        "pushq %0\n\t" // ss
-        "pushq %1\n\t" // rsp
-        "pushq %2\n\t" // rflags
-        "pushq %3\n\t" // cs
-        "pushq %4\n\t" // rip
-        "iretq\n\t"
+        "movq 48(%0), %%rax\n\t"
+        "movq %%rax, %%rbp\n\t"
         :
-        : "r"((uint64_t)context->ss),
-          "r"(context->rsp),
-          "r"(context->rflags),
-          "r"((uint64_t)context->cs),
-          "r"(context->rip)
+        : "r"(context)
+        : "memory", "rax");
+
+    // 恢复rsp
+    __asm__ __volatile__(
+        "movq %0, %%rsp\n\t"
+        :
+        : "r"(stack_ptr)
+        : "memory");
+
+    // 恢复标志寄存器
+    __asm__ __volatile__(
+        "pushq %0\n\t"
+        "popfq\n\t"
+        :
+        : "m"(context->rflags)
+        : "memory");
+
+    // 跳转到rip地址
+    __asm__ __volatile__(
+        "jmp *%0\n\t"
+        :
+        : "r"(context->rip)
         : "memory");
 }
 
-// 切换上下文
+// 进程上下文切换 - C语言包装
 void context_switch(context_t *from, context_t *to)
 {
-    if (from && to)
-    {
-        context_save(from);
-        context_restore(to);
-    }
+    context_save(from);
+    context_restore(to);
 }
+
+// 进程上下文切换 - 使用进程结构体的包装函数
+void process_context_switch(struct process *prev, struct process *next)
+{
+    __switch_to(prev, next);
+}
+
+// 汇编实现的上下文切换函数 - 声明为外部函数
+// 实际实现在switch.S文件中
+extern void __switch_to(struct process *prev, struct process *next);
