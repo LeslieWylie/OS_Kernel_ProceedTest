@@ -210,7 +210,7 @@ void process_exit(int exit_code)
     scheduler_remove(current);
 
     // 触发调度
-    schedule();
+    schedule(); // 使用scheduler.c中的FIFO调度实现
 }
 
 // 等待指定进程结束
@@ -218,7 +218,7 @@ int process_wait(pid_t pid, int *exit_code)
 {
     // 查找进程
     process_t *target = NULL;
-    for (int i = 0; i < task_count; i++)
+    for (int i = 1; i < task_count; i++)
     {
         if (task[i] && task[i]->pid == pid)
         {
@@ -236,7 +236,7 @@ int process_wait(pid_t pid, int *exit_code)
     if (target->state != PROCESS_TERMINATED)
     {
         current->state = PROCESS_BLOCKED;
-        schedule();
+        schedule(); // 使用scheduler.c中的FIFO调度实现
     }
 
     // 进程已终止，获取退出码
@@ -258,13 +258,13 @@ void do_timer(void)
         // 如果计数器为0，触发调度
         if (current->counter == 0)
         {
-            schedule();
+            schedule(); // 使用scheduler.c中的FIFO调度实现
         }
     }
 }
 
 // 简单的调度算法 (SJF - Shortest Job First)
-void schedule(void)
+void schedule_sjf(void)
 {
     int next = 0;
     uint32_t min_counter = 0xFFFFFFFF;
@@ -291,7 +291,7 @@ void schedule(void)
             }
         }
         // 重新调度
-        schedule();
+        schedule_sjf();
         return;
     }
 
