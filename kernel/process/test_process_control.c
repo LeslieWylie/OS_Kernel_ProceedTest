@@ -1,11 +1,13 @@
-#include "process.h"
-#include "printk.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <stdint.h>
+#include "process.h"
+#include "../../include/printk.h"
+
+// 定义pid_t类型
+typedef int32_t pid_t;
 
 // 测试进程函数
 static void test_process(void *arg)
@@ -43,7 +45,7 @@ void test_process_control(void)
     // 测试suspend命令
     printk("\n暂停进程 %d:\n", pid2);
     char cmd[32];
-    snprintf(cmd, sizeof(cmd), "suspend %d", pid2);
+    sprintf(cmd, "suspend %d", pid2);
     process_handle_command(cmd);
 
     // 再次执行ps查看状态
@@ -52,17 +54,17 @@ void test_process_control(void)
 
     // 测试priority命令
     printk("\n修改进程 %d 的优先级为4:\n", pid3);
-    snprintf(cmd, sizeof(cmd), "priority %d 4", pid3);
+    sprintf(cmd, "priority %d 4", pid3);
     process_handle_command(cmd);
 
     // 测试resume命令
     printk("\n恢复进程 %d:\n", pid2);
-    snprintf(cmd, sizeof(cmd), "resume %d", pid2);
+    sprintf(cmd, "resume %d", pid2);
     process_handle_command(cmd);
 
     // 测试kill命令
     printk("\n终止进程 %d:\n", pid1);
-    snprintf(cmd, sizeof(cmd), "kill %d", pid1);
+    sprintf(cmd, "kill %d", pid1);
     process_handle_command(cmd);
 
     // 最后执行ps查看最终状态

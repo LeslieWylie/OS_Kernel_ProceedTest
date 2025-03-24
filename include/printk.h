@@ -1,9 +1,9 @@
-#ifndef PRINTK_H
-#define PRINTK_H
+#ifndef _PRINTK_H
+#define _PRINTK_H
 
-#include <stddef.h>  
+#include <stdarg.h>
 
-void printk(const char *format, ...);
+void printk(const char *fmt, ...);
 void vga_putc(char c);
 
 #endif

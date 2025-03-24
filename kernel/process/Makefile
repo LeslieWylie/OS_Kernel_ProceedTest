@@ -1,19 +1,19 @@
 CC = gcc
-CFLAGS = -Wall -O2 -fno-stack-protector -fomit-frame-pointer -nostdinc -I../../include
+CFLAGS = -Wall -O2 -I../../include -g
 AS = as
 ASFLAGS = --64
 
-SRCS = process.c scheduler.c context.c memory.c process_control.c
+SRCS = process.c scheduler.c context.c memory.c process_control.c ../../include/printk.c test_process_control.c
 OBJS = $(SRCS:.c=.o)
 ASM_SRCS = switch.S
 ASM_OBJS = $(ASM_SRCS:.S=.o)
 
-# 测试程序
-TEST_SRCS = test_process_control.c
-TEST_OBJS = $(TEST_SRCS:.c=.o)
-TEST_BIN = process_test
+TARGET = process_test
 
-all: $(OBJS) $(ASM_OBJS) $(TEST_BIN)
+all: $(TARGET)
+
+$(TARGET): $(OBJS) $(ASM_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(ASM_OBJS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -21,12 +21,9 @@ all: $(OBJS) $(ASM_OBJS) $(TEST_BIN)
 %.o: %.S
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(TEST_BIN): $(OBJS) $(ASM_OBJS) $(TEST_OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(ASM_OBJS) $(TEST_OBJS)
-
 clean:
-	rm -f $(OBJS) $(ASM_OBJS) $(TEST_OBJS) $(TEST_BIN)
+	rm -f $(OBJS) $(ASM_OBJS) $(TARGET)
 
 .PHONY: test
-test: $(TEST_BIN)
-	./$(TEST_BIN) 
+test: $(TARGET)
+	./$(TARGET) 
