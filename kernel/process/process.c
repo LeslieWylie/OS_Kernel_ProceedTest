@@ -1,6 +1,7 @@
-#include "process.h"
-#include "memory.h"
-#include "scheduler.h"
+#include "types.h"
+#include "../../include/kernel/process.h"
+#include "../../include/kernel/memory.h"
+#include "../../include/kernel/scheduler.h"
 #include "context.h"
 #include <stdio.h>
 #include <string.h>
