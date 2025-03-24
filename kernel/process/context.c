@@ -145,10 +145,10 @@ void context_switch(context_t *from, context_t *to)
 
 // 汇编实现的上下文切换函数 - 声明为外部函数
 // 实际实现在switch.S文件中
-extern void __switch_to(struct process *prev, struct process *next);
+extern void __switch_to(process_t *prev, process_t *next);
 
 // 进程上下文切换 - 使用进程结构体的包装函数
-void process_context_switch(struct process *prev, struct process *next)
+void process_context_switch(process_t *prev, process_t *next)
 {
     __switch_to(prev, next);
 }

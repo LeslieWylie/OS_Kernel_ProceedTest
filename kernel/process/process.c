@@ -1,11 +1,24 @@
-#include "types.h"
-#include "../../include/kernel/process.h"
-#include "../../include/kernel/memory.h"
-#include "../../include/kernel/scheduler.h"
+#include <stdint.h> // 基本整数类型定义
+#include <stdio.h>  // 使用标准库的printf替代printk
+#include <string.h> // 标准字符串函数
+#include <stdlib.h> // malloc等函数
+
+// 本地类型定义（如果没有types.h文件）
+typedef int32_t pid_t;
+typedef struct pt_regs
+{
+    uint64_t rax, rbx, rcx, rdx;
+    uint64_t rsi, rdi, rbp, rsp;
+    uint64_t r8, r9, r10, r11, r12, r13, r14, r15;
+    uint64_t rip, rflags;
+    uint16_t cs, ds, es, fs, gs, ss;
+} pt_regs_t;
+
+// 项目头文件
+#include "process.h"
+#include "memory.h"
+#include "scheduler.h"
 #include "context.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 // 全局变量
 static pid_t next_pid = 1;

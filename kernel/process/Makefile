@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -O2 -I../../include -g
+CFLAGS = -Wall -O2 -I../../include -I. -g
 AS = as
 ASFLAGS = --64
 
