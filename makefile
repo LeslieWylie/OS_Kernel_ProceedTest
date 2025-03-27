@@ -1,72 +1,93 @@
 # OS内核主Makefile
+# ==========================================
 
-# 编译器和标志
-CC = gcc
-AS = gcc
-CFLAGS = -Wall -Wextra -I./include/kernel
-ASFLAGS = -c
+# 项目目录结构
+ROOT_DIR    := $(shell pwd)
+BUILD_DIR   := $(ROOT_DIR)/build
+BIN_DIR     := $(ROOT_DIR)/bin
+INCLUDE_DIR := $(ROOT_DIR)/include
+KERNEL_DIR  := $(ROOT_DIR)/kernel
+TESTS_DIR   := $(ROOT_DIR)/tests
 
-# 目标文件夹
-BIN_DIR = bin
+# 编译器和编译选项
+CC      := gcc
+AS      := gcc
+LD      := ld
+AR      := ar
+OBJCOPY := objcopy
 
-# 源代码目录
-SRC_DIR = kernel
-PROC_DIR = $(SRC_DIR)/process
+# 编译标志
+CFLAGS     := -Wall -Wextra -I$(INCLUDE_DIR) -fno-stack-protector -MMD -MP -g
+CFLAGS_OPT := -O2
+LDFLAGS    := 
+ASFLAGS    := -c
 
-# 源文件
-PROC_SRCS = $(PROC_DIR)/process.c \
-            $(PROC_DIR)/scheduler.c \
-            $(PROC_DIR)/context.c \
-            $(PROC_DIR)/memory.c
+# 是否启用调试
+DEBUG ?= 1
+ifeq ($(DEBUG), 1)
+  CFLAGS += -DDEBUG
+else
+  CFLAGS += $(CFLAGS_OPT)
+endif
 
-# 汇编源文件
-ASM_SRCS = $(PROC_DIR)/switch.S
+# 子系统目录
+SUBSYSTEMS := kernel/process kernel/mm kernel/fs kernel/utils
 
-# 生成的目标文件
-ASM_OBJS = $(ASM_SRCS:.S=.o)
-C_OBJS = $(PROC_SRCS:.c=.o)
-ALL_OBJS = $(C_OBJS) $(ASM_OBJS)
+# 子系统目标 (每个目录编译为一个静态库)
+SUBSYS_LIBS := $(foreach dir,$(SUBSYSTEMS),$(BUILD_DIR)/$(dir)/lib$(notdir $(dir)).a)
 
-# 测试程序
-TEST_PROGRAMS = test_process test_fifo test_context_switch
-TEST_TARGETS = $(addprefix $(BIN_DIR)/, $(TEST_PROGRAMS))
+# 测试目录
+TEST_DIRS := tests/process
 
-# 默认目标
-all: prepare $(TEST_TARGETS)
+# 主要目标
+.PHONY: all clean prepare subsystems tests
 
-# 准备输出目录
+# 默认目标 - 编译所有内容
+all: prepare subsystems tests
+
+# 创建必要的目录
 prepare:
+	@echo "Creating build directories..."
+	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(BIN_DIR)
+	@for dir in $(SUBSYSTEMS); do \
+		mkdir -p $(BUILD_DIR)/$$dir; \
+	done
+	@for dir in $(TEST_DIRS); do \
+		mkdir -p $(BUILD_DIR)/$$dir; \
+	done
 
-# 编译.S汇编文件
-%.o: %.S
-	$(AS) $(ASFLAGS) $< -o $@
+# 编译所有子系统
+subsystems: $(SUBSYS_LIBS)
 
-# 编译.c源文件
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# 编译静态库的通用规则
+$(BUILD_DIR)/%.a:
+	@echo "Building $@..."
+	@$(MAKE) -C $(dir $(subst $(BUILD_DIR)/,,$@)) BUILD_DIR=$(BUILD_DIR)/$(dir $(subst $(BUILD_DIR)/,,$@))
 
 # 编译测试程序
-$(BIN_DIR)/test_process: tests/process/test_process.c $(ALL_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(BIN_DIR)/test_fifo: tests/process/test_fifo.c $(ALL_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-$(BIN_DIR)/test_context_switch: tests/process/test_context_switch.c $(ALL_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+.PHONY: tests
+tests:
+	@for dir in $(TEST_DIRS); do \
+		echo "Building tests in $$dir..."; \
+		$(MAKE) -C $$dir BUILD_DIR=$(BUILD_DIR)/$$dir BIN_DIR=$(BIN_DIR); \
+	done
 
 # 运行所有测试
-test: all
-	@echo "\n=== 运行进程管理测试 ==="
-	$(BIN_DIR)/test_process
-	@echo "\n=== 运行FIFO调度器测试 ==="
-	$(BIN_DIR)/test_fifo
-	@echo "\n=== 运行上下文切换测试 ==="
-	$(BIN_DIR)/test_context_switch
+.PHONY: run-tests
+run-tests: tests
+	@echo "\n=== 运行所有测试 ==="
+	@for dir in $(TEST_DIRS); do \
+		echo "\n--- 运行 $$dir 测试 ---"; \
+		$(MAKE) -C $$dir run BUILD_DIR=$(BUILD_DIR)/$$dir BIN_DIR=$(BIN_DIR) || exit 1; \
+	done
 
-# 清理
+# 清理编译产物
 clean:
-	rm -f $(TEST_TARGETS) $(ALL_OBJS)
+	@echo "Cleaning..."
+	@rm -rf $(BUILD_DIR)/*
+	@rm -rf $(BIN_DIR)/*
+	@echo "All build artifacts removed."
 
-.PHONY: all prepare test clean
+# 包含自动生成的依赖
+-include $(shell find $(BUILD_DIR) -name "*.d" 2>/dev/null)

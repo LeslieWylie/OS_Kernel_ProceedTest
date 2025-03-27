@@ -1,73 +1,43 @@
 #ifndef _KERNEL_PROCESS_H
 #define _KERNEL_PROCESS_H
 
+/**
+ * @file process.h
+ * @brief 进程管理相关接口定义
+ *
+ * 提供进程管理系统的主要结构定义和函数声明
+ */
+
 #include <stdint.h>
 #include <stddef.h>
+#include "types.h"
 
-// 进程状态枚举
-typedef enum
-{
-    PROCESS_CREATED,   // 新创建
-    PROCESS_READY,     // 就绪态
-    PROCESS_RUNNING,   // 运行态
-    PROCESS_BLOCKED,   // 阻塞态
-    PROCESS_TERMINATED // 终止态
-} process_state_t;
-
-// 进程ID类型
-typedef int32_t pid_t;
-
-// 进程对用户态寄存器的保存结构
-typedef struct pt_regs
-{
-    // 通用寄存器
-    uint64_t r15;
-    uint64_t r14;
-    uint64_t r13;
-    uint64_t r12;
-    uint64_t r11;
-    uint64_t r10;
-    uint64_t r9;
-    uint64_t r8;
-    uint64_t rbp;
-    uint64_t rdi;
-    uint64_t rsi;
-    uint64_t rdx;
-    uint64_t rcx;
-    uint64_t rbx;
-    uint64_t rax;
-
-    // 段寄存器
-    uint16_t gs;
-    uint16_t fs;
-    uint16_t es;
-    uint16_t ds;
-
-    // 中断相关
-    uint64_t error_code; // 错误码
-    uint64_t rip;        // 指令指针
-    uint64_t cs;         // 代码段
-    uint64_t rflags;     // 标志寄存器
-    uint64_t rsp;        // 栈指针
-    uint64_t ss;         // 栈段
-} pt_regs_t;
-
-// 前向声明
-struct mm_struct;
+/* 确保类型全部声明完全 */
 struct context;
+struct pt_regs;
+struct mm_struct;
+struct process;
 
-// 进程控制块结构
-typedef struct process
+/* 类型别名声明 */
+typedef struct context context_t;
+typedef struct pt_regs pt_regs_t;
+typedef struct mm_struct mm_struct_t;
+typedef struct process process_t;
+
+/**
+ * @brief 进程控制块结构
+ */
+struct process
 {
     pid_t pid;             // 进程ID
     process_state_t state; // 进程状态
     uint32_t priority;     // 进程优先级
     uint32_t counter;      // 运行计数器/剩余时间片
 
-    void *stack;             // 进程栈指针
-    size_t stack_size;       // 栈大小
-    struct context *context; // 内核态CPU上下文
-    struct mm_struct *mm;    // 内存管理结构
+    void *stack;        // 进程栈指针
+    size_t stack_size;  // 栈大小
+    context_t *context; // 内核态CPU上下文
+    mm_struct_t *mm;    // 内存管理结构
 
     // 用户态相关
     void *user_stack;        // 用户态栈
@@ -80,13 +50,13 @@ typedef struct process
     struct process *next;   // 调度链表中的下一个进程
 
     // 统计和管理信息
-    uint64_t creation_time; // 创建时间
-    uint64_t cpu_time;      // CPU使用时间
-    int exit_code;          // 退出码
-    char name[32];          // 进程名称
-    void *kernel_stack;     // 内核栈
-    uint32_t flags;         // 进程标志
-} process_t;
+    os_time_t creation_time; // 创建时间
+    uint64_t cpu_time;       // CPU使用时间
+    int exit_code;           // 退出码
+    char name[32];           // 进程名称
+    void *kernel_stack;      // 内核栈
+    uint32_t flags;          // 进程标志
+};
 
 // 全局变量
 extern process_t *current;  // 当前运行的进程
@@ -105,9 +75,9 @@ const char *process_state_to_string(process_state_t state);
 int process_is_alive(process_t *proc);
 
 // 调度相关
-void schedule(void);     // 由scheduler.c实现的FIFO调度
-void schedule_sjf(void); // 由process.c实现的SJF调度
-void do_timer(void);
-void switch_to(process_t *next);
+void schedule(void);             // 进程调度实现
+void schedule_sjf(void);         // 最短作业优先调度实现
+void do_timer(void);             // 时间片处理
+void switch_to(process_t *next); // 进程切换
 
 #endif // _KERNEL_PROCESS_H

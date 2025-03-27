@@ -1,0 +1,100 @@
+# Doxyfile 1.9.1
+
+#---------------------------------------------------------------------------
+# 项目相关配置
+#---------------------------------------------------------------------------
+
+# 项目名称
+PROJECT_NAME           = "操作系统内核"
+
+# 项目简介
+PROJECT_BRIEF          = "教学用操作系统内核实现"
+
+# 项目版本
+PROJECT_NUMBER         = 1.0
+
+# 输出目录
+OUTPUT_DIRECTORY       = ./api
+
+# 源代码目录
+INPUT                  = ../include ../kernel
+INPUT_ENCODING         = UTF-8
+
+# 递归处理源代码目录
+RECURSIVE              = YES
+
+# 只提取带文档注释的实体
+EXTRACT_ALL            = NO
+
+# 提取私有成员
+EXTRACT_PRIVATE        = YES
+
+# 提取静态成员
+EXTRACT_STATIC         = YES
+
+# 生成调用图
+CALL_GRAPH             = YES
+
+# 生成调用者图
+CALLER_GRAPH           = YES
+
+# 生成类继承图
+CLASS_GRAPH            = YES
+
+# 对中文支持
+DOXYFILE_ENCODING      = UTF-8
+
+# 使用中文支持
+OUTPUT_LANGUAGE        = Chinese
+
+# 源代码语法高亮
+SOURCE_BROWSER         = YES
+
+# 显示行号
+REFERENCED_BY_RELATION = YES
+
+# 包含文件图
+INCLUDE_GRAPH          = YES
+
+# 被包含文件图
+INCLUDED_BY_GRAPH      = YES
+
+# 文件模式 (包含哪些文件)
+FILE_PATTERNS          = *.c *.h *.cpp *.hpp *.S
+
+# 排除目录
+EXCLUDE_PATTERNS       = */build/* */test/*
+
+# 显示使用示例
+EXAMPLE_PATH           = ../examples
+
+# HTML输出配置
+GENERATE_HTML          = YES
+HTML_OUTPUT            = .
+HTML_FILE_EXTENSION    = .html
+HTML_TIMESTAMP         = YES
+GENERATE_TREEVIEW      = YES
+
+# 禁用其他输出格式
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+
+# Markdown支持
+USE_MDFILE_AS_MAINPAGE = README.md
+
+# 图形格式
+DOT_IMAGE_FORMAT       = svg
+
+# 预处理
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+
+# 自动生成摘要
+JAVADOC_AUTOBRIEF      = YES
+
+# 文档化所有实体
+EXTRACT_ALL            = YES 
